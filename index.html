@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 분석 플랫폼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 200px 150px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .results-info {
+            background: #ecf0f1;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 70vh;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+            border-right: 1px solid #2c3e50;
+        }
+
+        th:hover {
+            background: #2c3e50;
+        }
+
+        th.sortable::after {
+            content: " ↕";
+            opacity: 0.5;
+            font-size: 12px;
+        }
+
+        th.sort-asc::after {
+            content: " ↑";
+            opacity: 1;
+            color: #3498db;
+        }
+
+        th.sort-desc::after {
+            content: " ↓";
+            opacity: 1;
+            color: #3498db;
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #ecf0f1;
+            border-right: 1px solid #ecf0f1;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
+
+        tr:nth-child(even):hover {
+            background-color: #f8f9fa;
+        }
+
+        .link-cell {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .link-cell:hover {
+            text-decoration: underline;
+        }
+
+        .pagination {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 2px solid #e1e8ed;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #3498db;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        /* 필터 드롭다운 스타일 */
+        .filter-header {
+            position: relative;
+        }
+
+        .filter-button {
+            display: inline-block;
+            margin-left: 8px;
+            cursor: pointer;
+            color: #bdc3c7;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .filter-button:hover {
+            color: #3498db;
+        }
+
+        .filter-button.active {
+            color: #e74c3c;
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 250px;
+            max-width: 400px;
+            max-height: 300px;
+            display: none;
+        }
+
+        .filter-dropdown.show {
+            display: block;
+        }
+
+        .filter-search {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .filter-search input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e1e8ed;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .filter-options {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+            min-height: 32px;
+            border-bottom: 1px solid #f8f9fa;
+        }
+
+        .filter-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .filter-option input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .filter-option-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #2c3e50;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .filter-option-count {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-left: 8px;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        .filter-actions {
+            padding: 10px;
+            border-top: 1px solid #ecf0f1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-actions button {
+            padding: 6px 12px;
+            border: 1px solid #e1e8ed;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .filter-actions .apply-btn {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .filter-actions .clear-btn {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 데이터 분석 플랫폼</h1>
+            <p>66,000개 이상의 데이터를 검색, 필터링, 정렬할 수 있습니다.</p>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="키워드로 검색하세요... (제목, 내용, 출처 등)">
+            </div>
+            <select id="categoryFilter" class="filter-select">
+                <option value="">모든 카테고리</option>
+                <option value="Deceptive & Fraudulent Behavior_Fraud">사기</option>
+                <option value="Deceptive & Fraudulent Behavior_Impersonation">사칭</option>
+            </select>
+            <div class="results-info" id="resultsInfo">
+                총 2개 항목
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="0">Event Num</th>
+                            <th class="sortable" data-column="1">Event Title</th>
+                            <th class="sortable" data-column="2">Article Set</th>
+                            <th class="sortable" data-column="3">Selected Article</th>
+                            <th class="sortable filter-header" data-column="4">
+                                Stakeholder
+                                <span class="filter-button" data-filter="stakeholder">🔽</span>
+                                <div class="filter-dropdown" id="filter-stakeholder">
+                                    <div class="filter-search">
+                                        <input type="text" placeholder="검색..." class="filter-search-input">
+                                    </div>
+                                    <div class="filter-options"></div>
+                                    <div class="filter-actions">
+                                        <button class="apply-btn">적용</button>
+                                        <button class="clear-btn">전체선택</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="sortable filter-header" data-column="5">
+                                Giver
+                                <span class="filter-button" data-filter="giver">🔽</span>
+                                <div class="filter-dropdown" id="filter-giver">
+                                    <div class="filter-search">
+                                        <input type="text" placeholder="검색..." class="filter-search-input">
+                                    </div>
+                                    <div class="filter-options"></div>
+                                    <div class="filter-actions">
+                                        <button class="apply-btn">적용</button>
+                                        <button class="clear-btn">전체선택</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="sortable filter-header" data-column="6">
+                                Receiver
+                                <span class="filter-button" data-filter="receiver">🔽</span>
+                                <div class="filter-dropdown" id="filter-receiver">
+                                    <div class="filter-search">
+                                        <input type="text" placeholder="검색..." class="filter-search-input">
+                                    </div>
+                                    <div class="filter-options"></div>
+                                    <div class="filter-actions">
+                                        <button class="apply-btn">적용</button>
+                                        <button class="clear-btn">전체선택</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="sortable filter-header" data-column="7">
+                                Problematic Behavior
+                                <span class="filter-button" data-filter="behavior">🔽</span>
+                                <div class="filter-dropdown" id="filter-behavior">
+                                    <div class="filter-search">
+                                        <input type="text" placeholder="검색..." class="filter-search-input">
+                                    </div>
+                                    <div class="filter-options"></div>
+                                    <div class="filter-actions">
+                                        <button class="apply-btn">적용</button>
+                                        <button class="clear-btn">전체선택</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="sortable" data-column="8">Aftermath</th>
+                            <th class="sortable filter-header" data-column="9">
+                                Platform
+                                <span class="filter-button" data-filter="platform">🔽</span>
+                                <div class="filter-dropdown" id="filter-platform">
+                                    <div class="filter-search">
+                                        <input type="text" placeholder="검색..." class="filter-search-input">
+                                    </div>
+                                    <div class="filter-options"></div>
+                                    <div class="filter-actions">
+                                        <button class="apply-btn">적용</button>
+                                        <button class="clear-btn">전체선택</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="sortable" data-column="10">Link</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="11" class="loading">데이터를 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <button id="firstPage">처음</button>
+                <button id="prevPage">이전</button>
+                <span id="pageInfo">1 / 1</span>
+                <button id="nextPage">다음</button>
+                <button id="lastPage">마지막</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 샘플 데이터 (실제로는 CSV에서 로드)
+        const sampleData = [
+            ["3909", "Face-changed images cause stir online", "(''Face-changed' images cause stir online', 'people's daily ', '2019-02-27')", "(''Face-changed' images cause stir online', 'people's daily ', '2019-02-27')", "1-r->1-i", "1-r", "1-i", "Deceptive & Fraudulent Behavior_Impersonation", "", "Bilibili (streaming site)", "http://en.chinaculture.org/2019-02/27/content_1353051.htm"],
+            ["43981", "Maximum complaints with cyber police station related to social media", "(''Maximum complaints with cyber police station related to social media'', 'the times of india', '2017-05-22')", "(''Maximum complaints with cyber police station related to social media'', 'the times of india', '2017-05-22')", "1-i->1-r", "1-i", "1-r", "Deceptive & Fraudulent Behavior_Fraud", "Protective Measures", "Online", "https://timesofindia.indiatimes.com/city/nashik/maximum-complaints-with-cyber-police-station-related-to-social-media/articleshow/58779933.cms"]
+        ];
+
+        let currentData = [...sampleData];
+        let filteredData = [...sampleData];
+        let currentPage = 1;
+        const itemsPerPage = 50;
+        let sortColumn = -1;
+        let sortDirection = 'asc';
+        
+        // 컬럼별 필터 상태
+        const columnFilters = {
+            stakeholder: new Set(),
+            giver: new Set(),
+            receiver: new Set(),
+            behavior: new Set(),
+            platform: new Set()
+        };
+        
+        // 필터 가능한 컬럼 매핑
+        const filterColumns = {
+            stakeholder: 4,
+            giver: 5,
+            receiver: 6,
+            behavior: 7,
+            platform: 9
+        };
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadCSVFile(); // CSV 파일 자동 로드
+        });
+
+        // CSV 파일 자동 로드 함수
+        async function loadCSVFile() {
+            try {
+                showLoadingState();
+                
+                console.log('CSV 파일 로드 시도 중...');
+                
+                // data.csv 파일을 자동으로 가져오기
+                const response = await fetch('data.csv');
+                console.log('Fetch 응답:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`CSV 파일 로드 실패: ${response.status} ${response.statusText}`);
+                }
+                
+                const csvText = await response.text();
+                console.log('CSV 파일 로드 완료, 크기:', csvText.length);
+                console.log('CSV 첫 100자:', csvText.substring(0, 100));
+                
+                // CSV 파싱
+                const parsedData = await parseCSVData(csvText);
+                console.log('파싱된 데이터 개수:', parsedData.length);
+                
+                if (parsedData.length > 0) {
+                    currentData = parsedData;
+                    console.log('데이터 업데이트 완료');
+                } else {
+                    throw new Error('파싱된 데이터가 없습니다.');
+                }
+                
+            } catch (error) {
+                console.error('CSV 로드 실패:', error);
+                console.log('샘플 데이터로 대체합니다.');
+                
+                // 샘플 데이터로 대체
+                currentData = [...sampleData];
+                
+                // 사용자에게 알림
+                const resultsInfo = document.getElementById('resultsInfo');
+                resultsInfo.textContent = 'CSV 파일을 찾을 수 없어 샘플 데이터를 표시합니다';
+                resultsInfo.style.background = '#e74c3c';
+                resultsInfo.style.color = 'white';
+                
+            } finally {
+                loadData(); // 데이터 로드 및 초기화
+                hideLoadingState();
+            }
+        }
+
+        function showLoadingState() {
+            const resultsInfo = document.getElementById('resultsInfo');
+            resultsInfo.textContent = '데이터를 불러오는 중...';
+            resultsInfo.style.background = '#3498db';
+            resultsInfo.style.color = 'white';
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr><td colspan="11" class="loading">📊 대용량 데이터를 불러오는 중입니다...<br><small>잠시만 기다려주세요.</small></td></tr>';
+        }
+
+        function hideLoadingState() {
+            const resultsInfo = document.getElementById('resultsInfo');
+            resultsInfo.style.background = '#ecf0f1';
+            resultsInfo.style.color = '#7f8c8d';
+        }
+
+        async function parseCSVData(csvText) {
+            if (!csvText || csvText.trim().length === 0) {
+                console.error('CSV 텍스트가 비어있습니다.');
+                return [];
+            }
+            
+            const lines = csvText.trim().split('\n');
+            const data = [];
+            
+            console.log('총 라인 수:', lines.length);
+            
+            // 헤더 확인
+            if (lines.length < 2) {
+                console.error('CSV 파일이 너무 짧습니다. 라인 수:', lines.length);
+                return [];
+            }
+            
+            const header = parseCSVLine(lines[0]);
+            console.log('헤더:', header);
+            console.log('헤더 컬럼 수:', header.length);
+            
+            // 예상되는 헤더와 일치하는지 확인
+            const expectedColumns = ["Event Num","Event Title","Article Set","Selected Article","Stakeholder","Giver","Receiver","Problematic Behavior","Aftermath","Platform","Link"];
+            
+            if (header.length !== expectedColumns.length) {
+                console.warn(`헤더 컬럼 수가 예상과 다릅니다. 예상: ${expectedColumns.length}, 실제: ${header.length}`);
+            }
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (let i = 1; i < lines.length; i++) {
+                try {
+                    const line = lines[i].trim();
+                    if (!line) continue; // 빈 라인 건너뛰기
+                    
+                    const row = parseCSVLine(line);
+                    
+                    // 기본적인 유효성 검사
+                    if (row.length >= 10 && row[0] && row[0].trim()) { // 최소 10개 컬럼과 Event Num 존재
+                        // 부족한 컬럼은 빈 문자열로 채우기
+                        while (row.length < expectedColumns.length) {
+                            row.push('');
+                        }
+                        data.push(row);
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        if (errorCount <= 5) { // 처음 5개 에러만 로그
+                            console.warn(`라인 ${i} 건너뛰기 - 컬럼 수: ${row.length}, 첫 번째 값: "${row[0]}"`);
+                        }
+                    }
+                } catch (error) {
+                    errorCount++;
+                    if (errorCount <= 5) {
+                        console.warn(`라인 ${i} 파싱 실패:`, error.message);
+                    }
+                }
+                
+                // 진행상황 표시 (큰 파일용) - UI 블록 방지를 위한 비동기 처리
+                if (i % 5000 === 0) {
+                    console.log(`파싱 진행률: ${Math.round((i / lines.length) * 100)}% (성공: ${successCount}, 실패: ${errorCount})`);
+                    
+                    // 진행률 표시 업데이트
+                    const resultsInfo = document.getElementById('resultsInfo');
+                    resultsInfo.textContent = `데이터 파싱 중... ${Math.round((i / lines.length) * 100)}%`;
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1)); // UI 블록 방지
+                }
+            }
+            
+            console.log(`파싱 완료 - 성공: ${successCount}개, 실패: ${errorCount}개`);
+            return data;
+        }
+
+        function setupEventListeners() {
+            // 검색
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            
+            // 카테고리 필터
+            document.getElementById('categoryFilter').addEventListener('change', handleFilter);
+            
+            // 정렬
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.addEventListener('click', (e) => {
+                    // 필터 버튼이 클릭된 경우 정렬 이벤트 방지
+                    if (e.target.classList.contains('filter-button')) {
+                        e.stopPropagation();
+                        return;
+                    }
+                    handleSort(parseInt(th.dataset.column));
+                });
+            });
+
+            // 페이지네이션
+            document.getElementById('firstPage').addEventListener('click', () => goToPage(1));
+            document.getElementById('prevPage').addEventListener('click', () => goToPage(currentPage - 1));
+            document.getElementById('nextPage').addEventListener('click', () => goToPage(currentPage + 1));
+            document.getElementById('lastPage').addEventListener('click', () => goToPage(Math.ceil(filteredData.length / itemsPerPage)));
+            
+            // 컬럼 필터 설정
+            setupColumnFilters();
+            
+            // 외부 클릭시 드롭다운 닫기
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.filter-header')) {
+                    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                        dropdown.classList.remove('show');
+                    });
+                }
+            });
+        }
+
+        function loadData() {
+            filteredData = [...currentData];
+            renderTable();
+            updatePagination();
+            updateResultsInfo();
+            // DOM이 준비된 후에 필터 초기화
+            setTimeout(() => {
+                initializeColumnFilters();
+            }, 100);
+        }
+
+        function initializeColumnFilters() {
+            // 각 컬럼의 고유값들 수집
+            Object.keys(filterColumns).forEach(filterName => {
+                const columnIndex = filterColumns[filterName];
+                const uniqueValues = [...new Set(currentData.map(row => row[columnIndex]).filter(val => val && val.trim()))];
+                console.log(`${filterName} 컬럼 고유값:`, uniqueValues); // 디버깅용
+                updateFilterDropdown(filterName, uniqueValues);
+            });
+        }
+
+        function setupColumnFilters() {
+            Object.keys(filterColumns).forEach(filterName => {
+                const filterButton = document.querySelector(`[data-filter="${filterName}"]`);
+                const dropdown = document.getElementById(`filter-${filterName}`);
+                
+                filterButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // 다른 드롭다운들 닫기
+                    document.querySelectorAll('.filter-dropdown').forEach(dd => {
+                        if (dd !== dropdown) dd.classList.remove('show');
+                    });
+                    
+                    // 현재 드롭다운 토글
+                    dropdown.classList.toggle('show');
+                    
+                    // 드롭다운이 열릴 때 데이터 업데이트
+                    if (dropdown.classList.contains('show')) {
+                        updateFilterDropdownData(filterName);
+                    }
+                });
+                
+                // 필터 검색
+                const searchInput = dropdown.querySelector('.filter-search-input');
+                searchInput.addEventListener('input', () => {
+                    filterDropdownOptions(filterName, searchInput.value);
+                });
+                
+                // 적용 버튼
+                const applyBtn = dropdown.querySelector('.apply-btn');
+                applyBtn.addEventListener('click', () => {
+                    applyColumnFilter(filterName);
+                    dropdown.classList.remove('show');
+                });
+                
+                // 전체선택 버튼
+                const clearBtn = dropdown.querySelector('.clear-btn');
+                clearBtn.addEventListener('click', () => {
+                    clearColumnFilter(filterName);
+                });
+            });
+        }
+
+        function updateFilterDropdown(filterName, values) {
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            if (!dropdown) {
+                console.error(`필터 드롭다운을 찾을 수 없습니다: filter-${filterName}`);
+                return;
+            }
+            
+            const optionsContainer = dropdown.querySelector('.filter-options');
+            if (!optionsContainer) {
+                console.error(`옵션 컨테이너를 찾을 수 없습니다: ${filterName}`);
+                return;
+            }
+            
+            console.log(`${filterName} 필터 업데이트 중...`, values); // 디버깅용
+            
+            // 값들을 정렬
+            values.sort();
+            
+            // 간단한 HTML 구조로 테스트
+            const optionsHTML = values.map(value => {
+                const escapedValue = value.replace(/"/g, '&quot;');
+                const count = currentData.filter(row => row[filterColumns[filterName]] === value).length;
+                const isChecked = columnFilters[filterName].size === 0 || columnFilters[filterName].has(value);
+                
+                return `
+                    <div class="filter-option" data-value="${escapedValue}">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} />
+                        <span class="filter-option-text">${value}</span>
+                        <span class="filter-option-count">(${count})</span>
+                    </div>
+                `;
+            }).join('');
+            
+            console.log(`${filterName} 생성된 HTML:`, optionsHTML); // 전체 HTML 확인
+            optionsContainer.innerHTML = optionsHTML;
+            
+            // DOM에 실제로 추가되었는지 확인
+            const addedOptions = optionsContainer.querySelectorAll('.filter-option');
+            console.log(`${filterName} DOM에 추가된 옵션 수:`, addedOptions.length);
+            
+            // 각 옵션의 텍스트 확인
+            addedOptions.forEach((option, index) => {
+                const text = option.querySelector('.filter-option-text');
+                console.log(`${filterName} 옵션 ${index}:`, text ? text.textContent : 'text 없음');
+            });
+            
+            // 체크박스 이벤트 리스너 추가
+            addedOptions.forEach(option => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.addEventListener('change', () => {
+                        updateFilterButtonState(filterName);
+                    });
+                }
+                
+                option.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox' && checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        updateFilterButtonState(filterName);
+                    }
+                });
+            });
+        }
+
+        function updateFilterDropdownData(filterName) {
+            const columnIndex = filterColumns[filterName];
+            const currentFilteredData = getFilteredDataExcluding(filterName);
+            const uniqueValues = [...new Set(currentFilteredData.map(row => row[columnIndex]).filter(val => val && val.trim()))];
+            
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            const optionsContainer = dropdown.querySelector('.filter-options');
+            
+            uniqueValues.sort();
+            
+            optionsContainer.innerHTML = uniqueValues.map(value => {
+                const count = currentFilteredData.filter(row => row[columnIndex] === value).length;
+                const isChecked = columnFilters[filterName].size === 0 || columnFilters[filterName].has(value);
+                
+                return `
+                    <div class="filter-option" data-value="${value}">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''}>
+                        <span class="filter-option-text" title="${value}">${value}</span>
+                        <span class="filter-option-count">(${count})</span>
+                    </div>
+                `;
+            }).join('');
+            
+            // 이벤트 리스너 재추가
+            optionsContainer.querySelectorAll('.filter-option').forEach(option => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    updateFilterButtonState(filterName);
+                });
+                
+                option.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        checkbox.checked = !checkbox.checked;
+                        updateFilterButtonState(filterName);
+                    }
+                });
+            });
+        }
+
+        function filterDropdownOptions(filterName, searchTerm) {
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            const options = dropdown.querySelectorAll('.filter-option');
+            
+            options.forEach(option => {
+                const text = option.querySelector('.filter-option-text').textContent.toLowerCase();
+                const isVisible = text.includes(searchTerm.toLowerCase());
+                option.style.display = isVisible ? 'flex' : 'none';
+            });
+        }
+
+        function updateFilterButtonState(filterName) {
+            const filterButton = document.querySelector(`[data-filter="${filterName}"]`);
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            const checkedBoxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+            
+            if (checkedBoxes.length === 0 || checkedBoxes.length === checkboxes.length) {
+                filterButton.classList.remove('active');
+            } else {
+                filterButton.classList.add('active');
+            }
+        }
+
+        function applyColumnFilter(filterName) {
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            const checkedOptions = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+            
+            columnFilters[filterName].clear();
+            checkedOptions.forEach(checkbox => {
+                const value = checkbox.closest('.filter-option').dataset.value;
+                columnFilters[filterName].add(value);
+            });
+            
+            applyAllFilters();
+            updateFilterButtonState(filterName);
+        }
+
+        function clearColumnFilter(filterName) {
+            const dropdown = document.getElementById(`filter-${filterName}`);
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            columnFilters[filterName].clear();
+            updateFilterButtonState(filterName);
+        }
+
+        function getFilteredDataExcluding(excludeFilter) {
+            let data = [...currentData];
+            
+            // 검색어 필터 적용
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                data = data.filter(row => 
+                    row.some(cell => cell.toString().toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // 카테고리 필터 적용
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            if (categoryFilter) {
+                data = data.filter(row => row[7].includes(categoryFilter));
+            }
+            
+            // 다른 컬럼 필터들 적용 (현재 필터 제외)
+            Object.keys(filterColumns).forEach(filterName => {
+                if (filterName !== excludeFilter && columnFilters[filterName].size > 0) {
+                    const columnIndex = filterColumns[filterName];
+                    data = data.filter(row => columnFilters[filterName].has(row[columnIndex]));
+                }
+            });
+            
+            return data;
+        }
+
+        function handleSearch() {
+            applyAllFilters();
+        }
+
+        function handleFilter() {
+            applyAllFilters();
+        }
+
+        function applyAllFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            
+            filteredData = currentData.filter(row => {
+                // 검색어 필터
+                const matchesSearch = searchTerm === '' || row.some(cell => 
+                    cell.toString().toLowerCase().includes(searchTerm)
+                );
+                
+                // 카테고리 필터
+                const matchesCategory = categoryFilter === '' || row[7].includes(categoryFilter);
+                
+                // 컬럼 필터들
+                const matchesColumnFilters = Object.keys(filterColumns).every(filterName => {
+                    if (columnFilters[filterName].size === 0) return true;
+                    const columnIndex = filterColumns[filterName];
+                    return columnFilters[filterName].has(row[columnIndex]);
+                });
+                
+                return matchesSearch && matchesCategory && matchesColumnFilters;
+            });
+            
+            currentPage = 1;
+            renderTable();
+            updatePagination();
+            updateResultsInfo();
+        }
+
+        function handleSort(columnIndex) {
+            if (sortColumn === columnIndex) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = columnIndex;
+                sortDirection = 'asc';
+            }
+
+            filteredData.sort((a, b) => {
+                let aVal = a[columnIndex];
+                let bVal = b[columnIndex];
+
+                // 숫자인지 확인
+                const aNum = parseFloat(aVal);
+                const bNum = parseFloat(bVal);
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    aVal = aNum;
+                    bVal = bNum;
+                } else {
+                    aVal = aVal.toString().toLowerCase();
+                    bVal = bVal.toString().toLowerCase();
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateSortIcons();
+            renderTable();
+        }
+
+        function updateSortIcons() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (parseInt(th.dataset.column) === sortColumn) {
+                    th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 40px; color: #7f8c8d;">검색 결과가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = pageData.map(row => 
+                `<tr>
+                    ${row.map((cell, index) => {
+                        if (index === 10 && cell.startsWith('http')) {
+                            return `<td><a href="${cell}" target="_blank" class="link-cell">${cell}</a></td>`;
+                        }
+                        return `<td title="${cell}">${cell}</td>`;
+                    }).join('')}
+                </tr>`
+            ).join('');
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            
+            document.getElementById('firstPage').disabled = currentPage === 1;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+            document.getElementById('lastPage').disabled = currentPage === totalPages || totalPages === 0;
+            
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${Math.max(1, totalPages)}`;
+        }
+
+        function updateResultsInfo() {
+            const total = filteredData.length;
+            const start = Math.min((currentPage - 1) * itemsPerPage + 1, total);
+            const end = Math.min(currentPage * itemsPerPage, total);
+            
+            if (total === 0) {
+                document.getElementById('resultsInfo').textContent = '검색 결과 없음';
+            } else {
+                document.getElementById('resultsInfo').textContent = `${start}-${end} / 총 ${total.toLocaleString()}개`;
+            }
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderTable();
+                updatePagination();
+                updateResultsInfo();
+            }
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            let i = 0;
+            
+            while (i < line.length) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                        // 따옴표 이스케이프 ("" -> ")
+                        current += '"';
+                        i += 2;
+                    } else {
+                        // 따옴표 시작/끝
+                        inQuotes = !inQuotes;
+                        i++;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    // 컬럼 구분자
+                    result.push(current.trim());
+                    current = '';
+                    i++;
+                } else {
+                    current += char;
+                    i++;
+                }
+            }
+            
+            // 마지막 컬럼 추가
+            result.push(current.trim());
+            
+            return result;
+        }
+
+        // 대용량 데이터 처리를 위한 성능 최적화
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 40px; color: #7f8c8d;">검색 결과가 없습니다.</td></tr>';
+                return;
+            }
+
+            // 성능 최적화: DocumentFragment 사용
+            const fragment = document.createDocumentFragment();
+            
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = row.map((cell, index) => {
+                    if (index === 10 && cell && cell.startsWith('http')) {
+                        return `<td><a href="${cell}" target="_blank" rel="noopener noreferrer" class="link-cell">${cell}</a></td>`;
+                    }
+                    const cellContent = cell || '';
+                    const displayContent = cellContent.length > 50 ? cellContent.substring(0, 50) + '...' : cellContent;
+                    return `<td title="${cellContent}">${displayContent}</td>`;
+                }).join('');
+                fragment.appendChild(tr);
+            });
+            
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
+        }
+    </script>
+</body>
+</html>
